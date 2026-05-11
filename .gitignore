@@ -1,0 +1,60 @@
+# -----------------------------------
+# Python cache / compiled files
+# -----------------------------------
+__pycache__/
+*.py[cod]
+*.pyo
+*.so
+*.egg-info/
+build/
+dist/
+
+# Virtual environments
+.venv/
+env/
+venv/
+ENV/
+
+# Editors
+.vscode/
+.idea/
+.DS_Store
+
+# Jupyter
+.ipynb_checkpoints/
+
+# -----------------------------------
+# Project-specific data / outputs
+# -----------------------------------
+
+# Raw + interim + processed data (never push)
+data/**
+!data/raw/.gitkeep
+!data/raw/README.md
+!data/interim/.gitkeep
+!data/interim/README.md
+!data/processed/.gitkeep
+
+# Results & artifacts
+results/**
+!results/.gitkeep
+artifacts/**
+!artifacts/.gitkeep
+configs/*.json
+
+# Misc generated files
+*.xlsx
+*.csv
+*.png
+*.pdf
+*.json
+*.html
+*.joblib
+*.pkl
+*.log
+
+# Windows / Mac cruft
+Thumbs.db
+ehthumbs.db
+[Dd]esktop.ini
+$RECYCLE.BIN/
