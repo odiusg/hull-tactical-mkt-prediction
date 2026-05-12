@@ -1,5 +1,7 @@
 # Hull Tactical – Market Prediction
 
+[中文版](README_zh.md)
+
 A full reproducible pipeline for EDA, feature engineering, model training and
 back-testing built for the
 [Kaggle Hull Tactical Market Prediction](https://www.kaggle.com/competitions/hull-tactical-market-prediction)
