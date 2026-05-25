@@ -1,17 +1,3 @@
-"""
-Preprocessing pipeline for the Hull Tactical Market Prediction data.
-
-Implements:
-- Extreme-value detection / cleaning (asymmetric isolated spikes)
-- Missing-flag columns for high-NA features (>= 40% missing on train)
-- Time-based train/val/test split
-
-Extracted from the original analysis notebook (`final_version.ipynb` / `code.md`)
-and refactored into a reusable module.
-"""
-
-from __future__ import annotations
-
 import numpy as np
 import pandas as pd
 
@@ -20,35 +6,8 @@ from .paths import INTERIM_DIR, RESULTS_DIR
 from .utils import get_feature_cols
 
 
-# ---------------------------------------------------------------------------
-# Extreme-value cleaner
-# ---------------------------------------------------------------------------
 def clean_extreme_values(df, cols, quantile=0.005, ratio=10, name="Dataset"):
-    """
-    Remove isolated spikes: a value is set to NaN if
-      - it sits outside the [quantile, 1-quantile] envelope, and
-      - it is at least `ratio` times larger (in absolute value) than BOTH
-        immediate neighbours, and the neighbours themselves are not spikes.
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-    cols : list[str]
-        Columns to check (non-numeric / target / non-existent cols are skipped).
-    quantile : float
-        Two-sided quantile threshold for the "extreme" envelope.
-    ratio : float
-        Spike-vs-neighbour multiplier.
-    name : str
-        Label used in the printed summary.
-
-    Returns
-    -------
-    cleaned_df : pd.DataFrame
-        Copy of `df` with detected spikes replaced by NaN.
-    dirty_summary : pd.DataFrame
-        Per-column count + rate of removed values.
-    """
+    """Set isolated spikes to NaN: outside [quantile, 1-quantile] AND ≥ratio× both neighbours."""
     cleaned_df = df.copy()
     dirty_info = {}
 
@@ -105,9 +64,6 @@ def clean_extreme_values(df, cols, quantile=0.005, ratio=10, name="Dataset"):
     return cleaned_df, dirty_summary
 
 
-# ---------------------------------------------------------------------------
-# Missing-flag creation
-# ---------------------------------------------------------------------------
 def add_missing_flags(df, high_na_cols):
     """Add a 0/1 `<col>_missing` column for every high-NA column."""
     out = df.copy()
@@ -116,9 +72,6 @@ def add_missing_flags(df, high_na_cols):
     return out
 
 
-# ---------------------------------------------------------------------------
-# High-level builder
-# ---------------------------------------------------------------------------
 def build_cleaned_data(
     train: pd.DataFrame,
     train_ratio: float = 0.7,
@@ -129,38 +82,17 @@ def build_cleaned_data(
     save: bool = True,
     excel_name: str = "cleaned_train.xlsx",
 ):
-    """
-    Full cleaning pipeline used by every downstream step.
-
-    Pipeline
-    --------
-    1. Sort by date_id.
-    2. Run extreme-value cleaner on all feature columns.
-    3. On the *train portion only*, identify columns with missing rate
-       >= `high_na_threshold` and add `<col>_missing` indicator columns.
-    4. Time-based split (train/val/test) on the cleaned + flagged frame.
-
-    Returns
-    -------
-    full_cleaned : pd.DataFrame
-        Full sorted, cleaned, flagged frame.
-    train_clean, val_clean, test_clean : pd.DataFrame
-        Time-based splits of `full_cleaned`.
-    high_na_cols : list[str]
-        Columns that received a `_missing` flag.
-    """
     if "date_id" not in train.columns:
         raise ValueError("train must contain a 'date_id' column.")
 
     df = train.sort_values("date_id").reset_index(drop=True).copy()
 
-    # 1. Clean isolated spikes on every feature column
     feature_cols = get_feature_cols(df)
     cleaned, dirty_summary = clean_extreme_values(
         df, feature_cols, quantile=quantile, ratio=ratio, name="Train"
     )
 
-    # 2. Decide high-NA columns from the train portion only (no leakage)
+    # decide high-NA columns on train portion only to avoid target leakage
     n = len(cleaned)
     train_end = int(train_ratio * n)
     train_part = cleaned.iloc[:train_end]
@@ -168,16 +100,13 @@ def build_cleaned_data(
     high_na_cols = missing_rate_train[
         missing_rate_train >= high_na_threshold
     ].index.tolist()
-    # Drop meta / finance cols from the flag list
     high_na_cols = [c for c in high_na_cols if c not in NON_FEATURE_COLS]
 
     print(f"\nHigh-NA columns (>= {high_na_threshold:.0%}, decided on train): "
           f"{len(high_na_cols)}")
 
-    # 3. Add 0/1 missing flags
     full_cleaned = add_missing_flags(cleaned, high_na_cols)
 
-    # 4. Time-based split
     val_end = int((train_ratio + val_ratio) * n)
     train_clean = full_cleaned.iloc[:train_end].reset_index(drop=True)
     val_clean = full_cleaned.iloc[train_end:val_end].reset_index(drop=True)
@@ -189,7 +118,6 @@ def build_cleaned_data(
     print("Val cleaned  :", val_clean.shape)
     print("Test cleaned :", test_clean.shape)
 
-    # 5. Optional save
     if save:
         out_path = INTERIM_DIR / excel_name
         with pd.ExcelWriter(out_path) as writer:

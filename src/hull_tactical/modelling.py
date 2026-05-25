@@ -84,7 +84,9 @@ def train_directional_model(full_feat_df,
     print("\nLabel distribution (Train):")
     print(y_train_cls.value_counts(normalize=True))
 
-    base_estimator = LGBMClassifier(
+    tscv = TimeSeriesSplit(n_splits=N_SPLITS)
+
+    base_estimator_patched = LGBMClassifierPatched(
         objective="binary",
         boosting_type="gbdt",
         n_estimators=500,
@@ -92,14 +94,9 @@ def train_directional_model(full_feat_df,
         n_jobs=-1,
     )
 
-    param_distributions = PARAM_DISTRIBUTIONS               # from config.py
-    tscv = TimeSeriesSplit(n_splits=N_SPLITS)               # time-series CV
-
-    base_estimator_patched = LGBMClassifierPatched(**base_estimator.get_params())
-
     halving_cv = HalvingRandomSearchCV(
         estimator=base_estimator_patched,
-        param_distributions=param_distributions,
+        param_distributions=PARAM_DISTRIBUTIONS,
         resource="n_estimators",
         max_resources=500,
         min_resources=50,
@@ -129,9 +126,6 @@ def train_directional_model(full_feat_df,
     metrics_train = evaluate_classifier(best_model, X_train, y_train_cls, "Train")
     metrics_val = evaluate_classifier(best_model, X_val, y_val_cls, "Validation")
     metrics_test = evaluate_classifier(best_model, X_test, y_test_cls, "Test")
-
-    ARTIFACTS_DIR.mkdir(parents=True, exist_ok=True)
-    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
     model_path = ARTIFACTS_DIR / "lgbm_directional.joblib"
     joblib.dump(best_model, model_path)

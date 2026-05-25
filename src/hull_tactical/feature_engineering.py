@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 
+from .data_loading import time_based_split
 from .config import (
     MACRO_COLS,
     MACRO_WINDOWS,
@@ -127,13 +128,9 @@ def build_features(full_cleaned,
     print(f"\nTotal new engineered features created (full set): {len(new_feature_cols)}")
     print(new_feature_cols)
 
-    n_all = len(full_feat_df)
-    train_end = int(train_ratio * n_all)
-    val_end = int((train_ratio + val_ratio) * n_all)
-
-    feat_train_set = full_feat_df.iloc[:train_end].reset_index(drop=True)
-    feat_val_set = full_feat_df.iloc[train_end:val_end].reset_index(drop=True)
-    feat_test_set = full_feat_df.iloc[val_end:].reset_index(drop=True)
+    feat_train_set, feat_val_set, feat_test_set = time_based_split(
+        full_feat_df, train_ratio, val_ratio, sort_by=None
+    )
 
     print("\n===== Feature sets with engineered features =====")
     print("Train with features:", feat_train_set.shape)

@@ -1,17 +1,13 @@
 import numpy as np
 import pandas as pd
 
-from .config import NON_FEATURE_COLS, PREFIX_MAP, TARGET_COL
+from .config import NON_FEATURE_COLS, TARGET_COL
 from .paths import RESULTS_DIR
 
 
 # Feature helpers
 def get_feature_cols(df):
     return [c for c in df.columns if c not in NON_FEATURE_COLS]   # drop meta/finance cols
-
-
-def drop_dummy_cols(df, cols):
-    return [c for c in cols if not c.startswith("D")]             # treat D* as dummy cols
 
 
 # Correlation with target
@@ -32,27 +28,6 @@ def corr_with_target(df, target_col=TARGET_COL, features=None, method="pearson")
 
     corr_df = corr_df.sort_values("abs_corr", ascending=False).reset_index(drop=True)
     return corr_df
-
-
-# Cluster means by prefix
-def build_cluster_means(df, prefix_map=PREFIX_MAP):
-    df = df.copy()
-    new_cols = []
-
-    for prefix, cat_name in prefix_map.items():
-        if prefix == "MOM":
-            cols = [c for c in df.columns if c.startswith("MOM")]
-        else:
-            cols = [c for c in df.columns if c.startswith(prefix) and not c.startswith("MOM")]
-
-        if len(cols) == 0:
-            continue
-
-        new_col = f"{prefix}_cluster_mean"
-        df[new_col] = df[cols].mean(axis=1)                       # row-wise mean
-        new_cols.append(new_col)
-
-    return df, new_cols
 
 
 # Pairwise feature correlation and Excel export

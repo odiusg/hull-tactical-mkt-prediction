@@ -32,9 +32,3 @@ def time_based_split(df, train_ratio=0.7, val_ratio=0.2, sort_by="date_id"):
     return train_set, val_set, test_set
 
 
-def print_split_summary(df, train_set, val_set, test_set, name="Train"):
-    n = len(df)
-    print(f"{name} total samples: {n:,}")
-    print(f"Train set: {len(train_set):,} rows ({len(train_set)/n:.1%})")
-    print(f"Validation set: {len(val_set):,} rows ({len(val_set)/n:.1%})")
-    print(f"Test set: {len(test_set):,} rows ({len(test_set)/n:.1%})")

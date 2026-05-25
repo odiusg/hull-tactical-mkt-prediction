@@ -1,22 +1,4 @@
-"""
-Feature-selection pipeline for the Hull Tactical Market Prediction project.
-
-Three-stage funnel:
-    1. Drop dummy {-1, 0, 1} columns and columns with >40% missing on train.
-    2. Variance filter (drop bottom-quartile variance).
-    3. Pairwise-correlation filter (uses the EDA-stage correlation report).
-    4. LightGBM gain-based selection (keep features that cumulatively
-       contribute up to 90% of total gain).
-
-Returns the selected feature list plus the importance DataFrame for plotting.
-
-Extracted from `final_version.ipynb` / `code.md` and refactored into a
-reusable module.
-"""
-
 from __future__ import annotations
-
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -24,25 +6,7 @@ import lightgbm as lgb
 
 from .config import TARGET_COL
 from .paths import RESULTS_DIR
-from .utils import (
-    get_feature_cols,
-    drop_dummy_cols,
-    compute_feature_pair_corr,
-)
-
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-def _time_split(df, train_ratio=0.7, val_ratio=0.2):
-    n = len(df)
-    train_end = int(train_ratio * n)
-    val_end = int((train_ratio + val_ratio) * n)
-    return (
-        df.iloc[:train_end].reset_index(drop=True),
-        df.iloc[train_end:val_end].reset_index(drop=True),
-        df.iloc[val_end:].reset_index(drop=True),
-    )
+from .utils import get_feature_cols, compute_feature_pair_corr
 
 
 def _is_dummy_like(series):
@@ -51,9 +15,6 @@ def _is_dummy_like(series):
     return vals.issubset({-1, 0, 1})
 
 
-# ---------------------------------------------------------------------------
-# Main pipeline
-# ---------------------------------------------------------------------------
 def run_feature_selection(
     full_cleaned: pd.DataFrame,
     train_ratio: float = 0.7,
@@ -64,21 +25,13 @@ def run_feature_selection(
     cum_gain_keep: float = 0.90,
     correlation_excel: str = "correlation_stats_trainset.xlsx",
 ):
-    """
-    Run the full feature-selection funnel and return the result dict.
-
-    Returns
-    -------
-    dict with keys
-        selected_features : list[str]   final feature list
-        importance_df     : pd.DataFrame LightGBM gain table
-        intermediate      : dict        sizes after each filter
-    """
     print("===== Feature selection pipeline =====")
 
-    train_clean, val_clean, test_clean = _time_split(
-        full_cleaned, train_ratio, val_ratio
-    )
+    n = len(full_cleaned)
+    train_end = int(train_ratio * n)
+    val_end = int((train_ratio + val_ratio) * n)
+    train_clean = full_cleaned.iloc[:train_end].reset_index(drop=True)
+    val_clean = full_cleaned.iloc[train_end:val_end].reset_index(drop=True)
 
     # ---- Step 0.1: start from all non-meta / non-finance columns
     all_features = get_feature_cols(full_cleaned)

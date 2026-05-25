@@ -53,8 +53,24 @@ configs/*.json
 *.pkl
 *.log
 
+# Claude Code IDE settings (may contain local paths)
+.claude/
+
+# v2 MLflow tracking data (not code, regenerable)
+v2/mlruns/
+v2/mlflow.db
+
+# v2 generated results (regenerable)
+v2/results/
+
+# Stray files
+=*
+
 # Windows / Mac cruft
 Thumbs.db
 ehthumbs.db
 [Dd]esktop.ini
 $RECYCLE.BIN/
+
+# WSL Windows Alternate Data Streams
+*:Zone.Identifier
