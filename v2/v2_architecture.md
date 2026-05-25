@@ -1,5 +1,12 @@
 # V2 Architecture
 
+
+## 该版为第二版，有关比赛内容与第一版请参考
+
+- [English README](../README.md)
+- [中文 README](../README_zh.md)
+
+---
 ## 1. 重要提示
 以下是整体架构的关键约定：
 
